@@ -34,7 +34,7 @@ class FavoritesScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
-                    childAspectRatio: 0.70,
+                    childAspectRatio: MediaQuery.of(context).size.width > 600 ? 0.65 : 0.58,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),

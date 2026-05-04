@@ -35,8 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
         final isLoading = AppController.instance.isLoadingProducts;
         final error = AppController.instance.productsError;
         
-        // Extract unique categories dynamically
-        final categories = ['All', ...allProducts.map((p) => p.category).where((c) => c.isNotEmpty).toSet()];
+        // Extract unique categories dynamically and remove the last one as requested
+        final categoriesSet = allProducts.map((p) => p.category).where((c) => c.isNotEmpty).toSet();
+        final categories = ['All', ...categoriesSet];
+        if (categories.length > 1) {
+          categories.removeLast();
+        }
         
         List<Product> displayProducts = _selectedCategory == 'All' 
             ? allProducts 
@@ -117,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 padding: const EdgeInsets.all(16),
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
-                                childAspectRatio: MediaQuery.of(context).size.width > 600 ? 0.60 : 0.52,
+                                childAspectRatio: MediaQuery.of(context).size.width > 600 ? 0.65 : 0.58,
                                   crossAxisSpacing: 16,
                                   mainAxisSpacing: 16,
                                 ),

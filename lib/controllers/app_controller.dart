@@ -208,7 +208,11 @@ class AppController extends ChangeNotifier {
       .toList();
 
   /// Get all requests (technician mode)
-  List<RepairRequest> get allRequests => List.unmodifiable(_requests);
+  /// Shows 'pending' requests (available for anyone) OR requests assigned to the current tech
+  List<RepairRequest> get allRequests {
+    final email = authService.currentUserEmail;
+    return _requests.where((r) => r.status == 'pending' || r.techEmail == email).toList();
+  }
 
   /// Get requests filtered by status
   List<RepairRequest> getRequestsByStatus(String status) =>
@@ -261,7 +265,11 @@ class AppController extends ChangeNotifier {
   void acceptRequest(int id, String techNotes) {
     final index = _requests.indexWhere((r) => r.id == id);
     if (index != -1) {
-      _requests[index] = _requests[index].copyWith(status: 'accepted', techNotes: techNotes);
+      _requests[index] = _requests[index].copyWith(
+        status: 'accepted', 
+        techNotes: techNotes,
+        techEmail: authService.currentUserEmail,
+      );
       _saveData();
       notifyListeners();
     }

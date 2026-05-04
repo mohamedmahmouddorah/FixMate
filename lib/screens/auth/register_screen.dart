@@ -17,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _idController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _bioController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
@@ -171,6 +172,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     validator: (val) {
                       if (val == null || val.isEmpty) return 'Password is required';
                       if (val.length < 6) return 'Password must be at least 6 characters';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    label: 'Confirm Password',
+                    controller: _confirmPasswordController,
+                    prefixIcon: Icons.lock_reset,
+                    isPassword: true,
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return 'Please confirm your password';
+                      if (val != _passwordController.text) return 'Passwords do not match';
                       return null;
                     },
                   ),

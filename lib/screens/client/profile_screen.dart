@@ -14,9 +14,10 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  void _editProfile(BuildContext context, String currentName, String currentPhone) {
+  void _editProfile(BuildContext context, String currentName, String currentPhone, String currentBio) {
     final nameController = TextEditingController(text: currentName);
     final phoneController = TextEditingController(text: currentPhone);
+    final bioController = TextEditingController(text: currentBio);
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -24,53 +25,129 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Edit Profile'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomTextField(
+                      label: 'Name',
+                      controller: nameController,
+                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 10),
+                    CustomTextField(
+                      label: 'Phone',
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 11,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        if (v.length != 11) return 'Must be exactly 11 digits';
+                        if (!RegExp(r"^\d+$").hasMatch(v)) return 'Numbers only';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    CustomTextField(
+                      label: 'Bio / Description',
+                      controller: bioController,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (formKey.currentState!.validate()) {
+                              AppController.instance.authService.updateProfile(
+                                email: AppController.instance.authService.currentUserEmail!,
+                                name: nameController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                bio: bioController.text.trim(),
+                              );
+                              Navigator.pop(context);
+                              setState(() {});
+                            }
+                          },
+                          child: const Text('Save'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _changePassword(BuildContext context) {
+    final passController = TextEditingController();
+    final confirmPassController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change Password'),
           content: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 CustomTextField(
-                  label: 'Name',
-                  controller: nameController,
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  label: 'New Password',
+                  controller: passController,
+                  isPassword: true,
+                  validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
                 ),
                 const SizedBox(height: 10),
                 CustomTextField(
-                  label: 'Phone',
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 11,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    if (v.length != 11) return 'Must be exactly 11 digits';
-                    if (!RegExp(r"^\d+$").hasMatch(v)) return 'Numbers only';
-                    return null;
-                  },
+                  label: 'Confirm Password',
+                  controller: confirmPassController,
+                  isPassword: true,
+                  validator: (v) => v != passController.text ? 'Passwords do not match' : null,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          AppController.instance.authService.changePassword(passController.text);
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Password updated successfully')),
+                          );
+                        }
+                      },
+                      child: const Text('Change'),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  AppController.instance.authService.updateUser(
-                    email: AppController.instance.authService.currentUserEmail!,
-                    name: nameController.text.trim(),
-                    phone: phoneController.text.trim(),
-                  );
-                  Navigator.pop(context);
-                  setState(() {});
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
         );
       },
     );
@@ -120,7 +197,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () => _editProfile(
               context, 
               authService.currentUserName ?? '', 
-              authService.currentUserPhone ?? ''
+              authService.currentUserPhone ?? '',
+              authService.currentUserBio ?? ''
             ),
             tooltip: 'Edit Profile',
           ),
@@ -154,10 +232,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 24),
             _buildInfoCard(context, 'Name', authService.currentUserName ?? 'N/A', Icons.person_outline),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildInfoCard(context, 'Email', authService.currentUserEmail ?? 'N/A', Icons.email_outlined),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildInfoCard(context, 'Phone', authService.currentUserPhone ?? 'N/A', Icons.phone_outlined),
+            const SizedBox(height: 12),
+            _buildInfoCard(context, 'User ID', authService.currentUserId ?? 'N/A', Icons.badge_outlined),
+            if (authService.currentUserBio != null && authService.currentUserBio!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _buildInfoCard(context, 'Bio', authService.currentUserBio!, Icons.info_outline),
+            ],
+            const SizedBox(height: 24),
+            
+            ElevatedButton.icon(
+              onPressed: () => _changePassword(context),
+              icon: const Icon(Icons.lock_outline),
+              label: const Text('Change Password'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: Colors.blueGrey.shade700,
+                foregroundColor: Colors.white,
+              ),
+            ),
             const SizedBox(height: 32),
             
             // Show Admin Action Buttons
@@ -209,10 +305,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildInfoCard(BuildContext context, String title, String value, IconData icon) {
     return Card(
-      child: ListTile(
-        leading: Icon(icon, color: Theme.of(context).primaryColor),
-        title: Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-        subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
+                  Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

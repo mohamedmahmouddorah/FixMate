@@ -9,6 +9,7 @@ class RepairRequest {
   String status; // 'pending', 'accepted', 'completed'
   final String clientEmail;
   final DateTime createdAt;
+  final String? techEmail;
   final String? techNotes;
   final List<String> imagePaths;
 
@@ -20,6 +21,7 @@ class RepairRequest {
     required this.location,
     this.status = 'pending',
     required this.clientEmail,
+    this.techEmail,
     this.techNotes,
     this.imagePaths = const [],
     DateTime? createdAt,
@@ -32,6 +34,7 @@ class RepairRequest {
     String? description,
     String? location,
     String? status,
+    String? techEmail,
     String? techNotes,
     List<String>? imagePaths,
   }) {
@@ -42,6 +45,7 @@ class RepairRequest {
       description: description ?? this.description,
       location: location ?? this.location,
       status: status ?? this.status,
+      techEmail: techEmail ?? this.techEmail,
       techNotes: techNotes ?? this.techNotes,
       imagePaths: imagePaths ?? this.imagePaths,
       clientEmail: clientEmail,
@@ -58,6 +62,7 @@ class RepairRequest {
       'location': location,
       'status': status,
       'clientEmail': clientEmail,
+      'techEmail': techEmail,
       'techNotes': techNotes,
       'imagePaths': imagePaths,
       'createdAt': createdAt.toIso8601String(),
@@ -73,6 +78,7 @@ class RepairRequest {
       location: json['location'] ?? '',
       status: json['status'] ?? 'pending',
       clientEmail: json['clientEmail'] ?? '',
+      techEmail: json['techEmail'],
       techNotes: json['techNotes'],
       imagePaths: List<String>.from(json['imagePaths'] ?? []),
       createdAt: DateTime.parse(json['createdAt']),

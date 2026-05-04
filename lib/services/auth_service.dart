@@ -62,9 +62,20 @@ class AuthService {
     return _users[_currentUserEmail]?['phone'];
   }
 
+  /// Get the current user's ID
+  String? get currentUserId {
+    if (_currentUserEmail == null) return null;
+    return _users[_currentUserEmail]?['id'];
+  }
+
   String? get currentUserRole {
     if (_currentUserEmail == null) return null;
     return _users[_currentUserEmail]?['role'] ?? 'client';
+  }
+
+  String? get currentUserBio {
+    if (_currentUserEmail == null) return null;
+    return _users[_currentUserEmail]?['bio'];
   }
 
   bool get isAdmin => currentUserRole == 'admin';
@@ -185,6 +196,7 @@ class AuthService {
     required String email,
     String? name,
     String? phone,
+    String? bio,
   }) {
     final userEmail = email.toLowerCase();
     if (!_users.containsKey(userEmail)) {
@@ -193,7 +205,22 @@ class AuthService {
 
     if (name != null) _users[userEmail]!['name'] = name;
     if (phone != null) _users[userEmail]!['phone'] = phone;
+    if (bio != null) {
+      if (bio.trim().isEmpty) {
+        _users[userEmail]!.remove('bio');
+      } else {
+        _users[userEmail]!['bio'] = bio.trim();
+      }
+    }
     
+    _saveData();
+    return null;
+  }
+
+  /// Change current user password
+  String? changePassword(String newPassword) {
+    if (_currentUserEmail == null) return 'Not logged in';
+    _users[_currentUserEmail]!['password'] = newPassword;
     _saveData();
     return null;
   }
