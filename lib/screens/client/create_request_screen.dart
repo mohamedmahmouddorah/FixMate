@@ -20,14 +20,22 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   final _locationController = TextEditingController();
   String _selectedCategory = 'Smartphones';
   bool _isGettingLocation = false;
-  File? _selectedImage;
+  final List<File> _selectedImages = [];
   
-  Future<void> _pickImage() async {
+  Future<void> _pickImages() async {
+    if (_selectedImages.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can add up to 5 images only')),
+      );
+      return;
+    }
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+    final pickedFiles = await picker.pickMultiImage();
+    if (pickedFiles.isNotEmpty) {
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _selectedImages.addAll(
+          pickedFiles.take(5 - _selectedImages.length).map((file) => File(file.path)),
+        );
       });
     }
   }
@@ -67,7 +75,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       category: _selectedCategory,
       description: _descriptionController.text.trim(),
       location: _locationController.text.trim(),
-      imagePath: _selectedImage?.path,
+      imagePaths: _selectedImages.map((f) => f.path).toList(),
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -119,6 +127,8 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   DropdownMenuItem(value: 'Smartphones', child: Text('Smartphones')),
                   DropdownMenuItem(value: 'Laptops', child: Text('Laptops')),
                   DropdownMenuItem(value: 'Home Appliances', child: Text('Home Appliances')),
+                  DropdownMenuItem(value: 'Washing Machines', child: Text('Washing Machines')),
+                  DropdownMenuItem(value: 'Refrigerators', child: Text('Refrigerators')),
                   DropdownMenuItem(value: 'TV & Audio', child: Text('TV & Audio')),
                   DropdownMenuItem(value: 'Gaming Consoles', child: Text('Gaming Consoles')),
                   DropdownMenuItem(value: 'Other', child: Text('Other')),
@@ -163,36 +173,61 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               ),
               const SizedBox(height: 16),
               // Image Picker Section
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  height: 120,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-                  ),
-                  child: _selectedImage != null
-                      ? ClipRRect(
+              const Text('Add Photos (Up to 5)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 100,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    GestureDetector(
+                      onTap: _pickImages,
+                      child: Container(
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_selectedImage!, fit: BoxFit.cover),
-                        )
-                      : const Column(
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                        ),
+                        child: const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey),
-                            SizedBox(height: 8),
-                            Text('Add an optional photo', style: TextStyle(color: Colors.grey)),
+                            Icon(Icons.add_a_photo_outlined, color: Colors.grey),
+                            SizedBox(height: 4),
+                            Text('Add', style: TextStyle(fontSize: 12, color: Colors.grey)),
                           ],
                         ),
+                      ),
+                    ),
+                    ..._selectedImages.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final image = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
+                            ),
+                            Positioned(
+                              top: 4, right: 4,
+                              child: GestureDetector(
+                                onTap: () => setState(() => _selectedImages.removeAt(index)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
                 ),
               ),
-              if (_selectedImage != null)
-                TextButton(
-                  onPressed: () => setState(() => _selectedImage = null),
-                  child: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
-                ),
               const SizedBox(height: 32),
               GradientButton(
                 text: 'Submit Request',

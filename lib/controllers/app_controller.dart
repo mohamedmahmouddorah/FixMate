@@ -20,12 +20,8 @@ class AppController extends ChangeNotifier {
   final StorageService _storage = StorageService.instance;
 
   Future<void> init() async {
-    // Load favorites
-    final favs = _storage.getStringList('favorite_ids');
-    if (favs != null) {
-      _favoriteProductIds.clear();
-      _favoriteProductIds.addAll(favs.map((e) => int.parse(e)));
-    }
+    // Load favorites (global or per-user)
+    loadFavorites();
 
     // Load requests
     final reqsStr = _storage.getString('requests_data');
@@ -44,9 +40,25 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _saveData() async {
-    await _storage.setStringList('favorite_ids', _favoriteProductIds.map((e) => e.toString()).toList());
+    final email = authService.currentUserEmail;
+    if (email != null) {
+      await _storage.setStringList('favorite_ids_$email', _favoriteProductIds.map((e) => e.toString()).toList());
+    } else {
+      await _storage.setStringList('favorite_ids', _favoriteProductIds.map((e) => e.toString()).toList());
+    }
     await _storage.setString('requests_data', json.encode(_requests.map((r) => r.toJson()).toList()));
     await _storage.setString('products_data', json.encode(_products.map((p) => p.toJson()).toList()));
+  }
+
+  void loadFavorites() {
+    final email = authService.currentUserEmail;
+    final key = email != null ? 'favorite_ids_$email' : 'favorite_ids';
+    final favs = _storage.getStringList(key);
+    _favoriteProductIds.clear();
+    if (favs != null) {
+      _favoriteProductIds.addAll(favs.map((e) => int.parse(e)));
+    }
+    notifyListeners();
   }
 
   // ==================== Theme ====================
@@ -208,7 +220,7 @@ class AppController extends ChangeNotifier {
     required String category,
     required String description,
     required String location,
-    String? imagePath,
+    List<String>? imagePaths,
   }) {
     final request = RepairRequest(
       id: _nextRequestId++,
@@ -216,7 +228,7 @@ class AppController extends ChangeNotifier {
       category: category,
       description: description,
       location: location,
-      imagePath: imagePath,
+      imagePaths: imagePaths ?? [],
       clientEmail: authService.currentUserEmail ?? 'unknown',
     );
     _requests.add(request);

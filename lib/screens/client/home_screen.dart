@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../controllers/app_controller.dart';
 import '../../widgets/product_card.dart';
+import '../../models/product_model.dart';
 import 'create_request_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,6 +13,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -35,9 +38,16 @@ class _HomeScreenState extends State<HomeScreen> {
         // Extract unique categories dynamically
         final categories = ['All', ...allProducts.map((p) => p.category).where((c) => c.isNotEmpty).toSet()];
         
-        final displayProducts = _selectedCategory == 'All' 
+        List<Product> displayProducts = _selectedCategory == 'All' 
             ? allProducts 
             : allProducts.where((p) => p.category == _selectedCategory).toList();
+
+        if (_searchQuery.isNotEmpty) {
+          final query = _searchQuery.toLowerCase();
+          displayProducts = displayProducts.where((p) =>
+              p.title.toLowerCase().contains(query) ||
+              p.brand.toLowerCase().contains(query)).toList();
+        }
 
         final isClient = AppController.instance.authService.currentUserRole == 'client' || AppController.instance.authService.currentUserRole == null;
 
@@ -47,6 +57,25 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           body: Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search devices...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
               if (!isLoading && allProducts.isNotEmpty)
                 SizedBox(
                   height: 60,
@@ -69,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                           labelStyle: TextStyle(
-                            color: isSelected ? Theme.of(context).primaryColor : Colors.black87,
+                            color: isSelected ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyMedium?.color,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
@@ -88,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 padding: const EdgeInsets.all(16),
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
-                                  childAspectRatio: 0.70,
+                                childAspectRatio: MediaQuery.of(context).size.width > 600 ? 0.60 : 0.52,
                                   crossAxisSpacing: 16,
                                   mainAxisSpacing: 16,
                                 ),

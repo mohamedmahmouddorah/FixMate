@@ -166,6 +166,24 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
             ),
+            // Full width Repair button
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => CreateRequestScreen(initialDevice: product.title)));
+                },
+                icon: const Icon(Icons.build, size: 14),
+                label: const Text('REPAIR', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ),
           ],
         ),
       ),

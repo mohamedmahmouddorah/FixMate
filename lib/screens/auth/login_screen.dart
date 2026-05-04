@@ -40,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = false);
       if (error == null) {
         // Success
+        AppController.instance.loadFavorites();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainWrapper()),
         );

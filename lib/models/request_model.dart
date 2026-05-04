@@ -10,7 +10,7 @@ class RepairRequest {
   final String clientEmail;
   final DateTime createdAt;
   final String? techNotes;
-  final String? imagePath;
+  final List<String> imagePaths;
 
   RepairRequest({
     required this.id,
@@ -21,7 +21,7 @@ class RepairRequest {
     this.status = 'pending',
     required this.clientEmail,
     this.techNotes,
-    this.imagePath,
+    this.imagePaths = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -33,7 +33,7 @@ class RepairRequest {
     String? location,
     String? status,
     String? techNotes,
-    String? imagePath,
+    List<String>? imagePaths,
   }) {
     return RepairRequest(
       id: id,
@@ -43,7 +43,7 @@ class RepairRequest {
       location: location ?? this.location,
       status: status ?? this.status,
       techNotes: techNotes ?? this.techNotes,
-      imagePath: imagePath ?? this.imagePath,
+      imagePaths: imagePaths ?? this.imagePaths,
       clientEmail: clientEmail,
       createdAt: createdAt,
     );
@@ -59,7 +59,7 @@ class RepairRequest {
       'status': status,
       'clientEmail': clientEmail,
       'techNotes': techNotes,
-      'imagePath': imagePath,
+      'imagePaths': imagePaths,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -74,7 +74,7 @@ class RepairRequest {
       status: json['status'] ?? 'pending',
       clientEmail: json['clientEmail'] ?? '',
       techNotes: json['techNotes'],
-      imagePath: json['imagePath'],
+      imagePaths: List<String>.from(json['imagePaths'] ?? []),
       createdAt: DateTime.parse(json['createdAt']),
     );
   }

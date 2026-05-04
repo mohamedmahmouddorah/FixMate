@@ -17,6 +17,8 @@ class _ManageDevicesScreenState extends State<ManageDevicesScreen> {
     'Smartphones',
     'Laptops',
     'Home Appliances',
+    'Washing Machines',
+    'Refrigerators',
     'TV & Audio',
     'Gaming Consoles',
     'Other',

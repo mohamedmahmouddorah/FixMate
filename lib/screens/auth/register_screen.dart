@@ -50,6 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           identifier: _emailController.text.trim(),
           password: _passwordController.text,
         );
+        AppController.instance.loadFavorites();
         Navigator.of(context).pop();
       } else {
         setState(() => _errorMessage = error);
@@ -127,10 +128,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     label: 'Phone Number',
                     controller: _phoneController,
                     prefixIcon: Icons.phone_outlined,
-                    keyboardType: TextInputType.phone,
+                    keyboardType: TextInputType.number,
+                    maxLength: 11,
                     validator: (val) {
                       if (val == null || val.isEmpty) return 'Phone is required';
-                      if (val.length < 11) return 'Phone must be at least 11 digits';
+                      if (val.length != 11) return 'Phone must be exactly 11 digits';
                       if (!RegExp(r"^\d+$").hasMatch(val)) return 'Phone must contain only numbers';
                       return null;
                     },
