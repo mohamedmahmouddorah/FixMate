@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../controllers/app_controller.dart';
 import '../auth/login_screen.dart';
 import '../admin/dashboard_screen.dart';
@@ -14,85 +13,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  void _editProfile(BuildContext context, String currentName, String currentPhone, String currentBio) {
-    final nameController = TextEditingController(text: currentName);
-    final phoneController = TextEditingController(text: currentPhone);
-    final bioController = TextEditingController(text: currentBio);
-    final formKey = GlobalKey<FormState>();
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Profile'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CustomTextField(
-                      label: 'Name',
-                      controller: nameController,
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      label: 'Phone',
-                      controller: phoneController,
-                      keyboardType: TextInputType.phone,
-                      maxLength: 11,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Required';
-                        if (v.length != 11) return 'Must be exactly 11 digits';
-                        if (!RegExp(r"^\d+$").hasMatch(v)) return 'Numbers only';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      label: 'Bio / Description',
-                      controller: bioController,
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (formKey.currentState!.validate()) {
-                              AppController.instance.authService.updateProfile(
-                                email: AppController.instance.authService.currentUserEmail!,
-                                name: nameController.text.trim(),
-                                phone: phoneController.text.trim(),
-                                bio: bioController.text.trim(),
-                              );
-                              Navigator.pop(context);
-                              setState(() {});
-                            }
-                          },
-                          child: const Text('Save'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   void _changePassword(BuildContext context) {
     final passController = TextEditingController();
@@ -193,16 +114,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Profile'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _editProfile(
-              context, 
-              authService.currentUserName ?? '', 
-              authService.currentUserPhone ?? '',
-              authService.currentUserBio ?? ''
-            ),
-            tooltip: 'Edit Profile',
-          ),
-          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               authService.logout();
@@ -238,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildInfoCard(context, 'Phone', authService.currentUserPhone ?? 'N/A', Icons.phone_outlined),
             const SizedBox(height: 12),
             _buildInfoCard(context, 'User ID', authService.currentUserId ?? 'N/A', Icons.badge_outlined),
-            if (authService.currentUserBio != null && authService.currentUserBio!.isNotEmpty) ...[
+            if (!authService.isAdmin && authService.currentUserBio != null && authService.currentUserBio!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildInfoCard(context, 'Bio', authService.currentUserBio!, Icons.info_outline),
             ],

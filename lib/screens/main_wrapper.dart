@@ -4,7 +4,6 @@ import 'client/requests_screen.dart';
 import 'client/favorites_screen.dart';
 import 'client/profile_screen.dart';
 
-
 class MainWrapper extends StatefulWidget {
   const MainWrapper({super.key});
 
@@ -31,8 +30,14 @@ class _MainWrapperState extends State<MainWrapper> {
         onTap: (idx) => setState(() => _currentIndex = idx),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Requests'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorites'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt),
+            label: 'Requests',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),

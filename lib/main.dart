@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'controllers/app_controller.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_wrapper.dart';
 import 'theme/app_theme.dart';
@@ -28,9 +29,11 @@ class FixMateApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeMode.system,
-          home: AuthService.instance.isLoggedIn
-              ? const MainWrapper()
-              : const LoginScreen(),
+          home: !AppController.instance.isOnboardingComplete
+              ? const OnboardingScreen()
+              : (AuthService.instance.isLoggedIn
+                  ? const MainWrapper()
+                  : const LoginScreen()),
         );
       },
     );

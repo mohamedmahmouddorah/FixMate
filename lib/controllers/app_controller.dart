@@ -19,7 +19,13 @@ class AppController extends ChangeNotifier {
   final AuthService authService = AuthService.instance;
   final StorageService _storage = StorageService.instance;
 
+  bool _isOnboardingComplete = false;
+  bool get isOnboardingComplete => _isOnboardingComplete;
+
   Future<void> init() async {
+    // Load onboarding status
+    _isOnboardingComplete = _storage.getBool('onboarding_complete') ?? false;
+
     // Load favorites (global or per-user)
     loadFavorites();
 
@@ -31,7 +37,8 @@ class AppController extends ChangeNotifier {
         _requests.clear();
         _requests.addAll(decoded.map((e) => RepairRequest.fromJson(e)));
         if (_requests.isNotEmpty) {
-          _nextRequestId = _requests.map((r) => r.id).reduce((a, b) => a > b ? a : b) + 1;
+          _nextRequestId =
+              _requests.map((r) => r.id).reduce((a, b) => a > b ? a : b) + 1;
         }
       } catch (e) {
         // ignore error
@@ -42,12 +49,30 @@ class AppController extends ChangeNotifier {
   Future<void> _saveData() async {
     final email = authService.currentUserEmail;
     if (email != null) {
-      await _storage.setStringList('favorite_ids_$email', _favoriteProductIds.map((e) => e.toString()).toList());
+      await _storage.setStringList(
+        'favorite_ids_$email',
+        _favoriteProductIds.map((e) => e.toString()).toList(),
+      );
     } else {
-      await _storage.setStringList('favorite_ids', _favoriteProductIds.map((e) => e.toString()).toList());
+      await _storage.setStringList(
+        'favorite_ids',
+        _favoriteProductIds.map((e) => e.toString()).toList(),
+      );
     }
-    await _storage.setString('requests_data', json.encode(_requests.map((r) => r.toJson()).toList()));
-    await _storage.setString('products_data', json.encode(_products.map((p) => p.toJson()).toList()));
+    await _storage.setString(
+      'requests_data',
+      json.encode(_requests.map((r) => r.toJson()).toList()),
+    );
+    await _storage.setString(
+      'products_data_v8',
+      json.encode(_products.map((p) => p.toJson()).toList()),
+    );
+  }
+
+  void completeOnboarding() {
+    _isOnboardingComplete = true;
+    _storage.setBool('onboarding_complete', true);
+    notifyListeners();
   }
 
   void loadFavorites() {
@@ -100,7 +125,7 @@ class AppController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final productsStr = _storage.getString('products_data');
+      final productsStr = _storage.getString('products_data_v8');
       if (productsStr != null) {
         final List<dynamic> decoded = json.decode(productsStr);
         _products = decoded.map((e) => Product.fromJson(e)).toList();
@@ -116,15 +141,17 @@ class AppController extends ChangeNotifier {
       if (_requests.isEmpty) {
         final mocks = await ApiService.fetchMockRequests();
         for (var mock in mocks) {
-          _requests.add(RepairRequest(
-            id: _nextRequestId++,
-            device: 'Device ${mock['id']}',
-            category: 'General',
-            description: mock['body'].toString().replaceAll('\n', ' '),
-            location: 'Random Location',
-            status: 'pending',
-            clientEmail: authService.currentUserEmail ?? 'user@fixmate.com',
-          ));
+          _requests.add(
+            RepairRequest(
+              id: _nextRequestId++,
+              device: 'Device ${mock['id']}',
+              category: 'General',
+              description: mock['body'].toString().replaceAll('\n', ' '),
+              location: 'Random Location',
+              status: 'pending',
+              clientEmail: authService.currentUserEmail ?? 'user@fixmate.com',
+            ),
+          );
         }
         _saveData();
       }
@@ -142,10 +169,12 @@ class AppController extends ChangeNotifier {
   Future<List<Product>> searchProducts(String query) async {
     final q = query.toLowerCase();
     return _products
-        .where((p) =>
-            p.title.toLowerCase().contains(q) ||
-            p.category.toLowerCase().contains(q) ||
-            p.brand.toLowerCase().contains(q))
+        .where(
+          (p) =>
+              p.title.toLowerCase().contains(q) ||
+              p.category.toLowerCase().contains(q) ||
+              p.brand.toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -211,7 +240,9 @@ class AppController extends ChangeNotifier {
   /// Shows 'pending' requests (available for anyone) OR requests assigned to the current tech
   List<RepairRequest> get allRequests {
     final email = authService.currentUserEmail;
-    return _requests.where((r) => r.status == 'pending' || r.techEmail == email).toList();
+    return _requests
+        .where((r) => r.status == 'pending' || r.techEmail == email)
+        .toList();
   }
 
   /// Get requests filtered by status
@@ -240,8 +271,16 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+
+
   /// Update an existing request
-  void updateRequest(int id, {String? device, String? description, String? location, String? status}) {
+  void updateRequest(
+    int id, {
+    String? device,
+    String? description,
+    String? location,
+    String? status,
+  }) {
     final index = _requests.indexWhere((r) => r.id == id);
     if (index != -1) {
       final request = _requests[index];
@@ -266,7 +305,7 @@ class AppController extends ChangeNotifier {
     final index = _requests.indexWhere((r) => r.id == id);
     if (index != -1) {
       _requests[index] = _requests[index].copyWith(
-        status: 'accepted', 
+        status: 'accepted',
         techNotes: techNotes,
         techEmail: authService.currentUserEmail,
       );
@@ -284,16 +323,19 @@ class AppController extends ChangeNotifier {
   List<RepairRequest> searchRequests(String query) {
     final q = query.toLowerCase();
     return _requests
-        .where((r) =>
-            r.device.toLowerCase().contains(q) ||
-            r.description.toLowerCase().contains(q) ||
-            r.location.toLowerCase().contains(q) ||
-            r.status.toLowerCase().contains(q))
+        .where(
+          (r) =>
+              r.device.toLowerCase().contains(q) ||
+              r.description.toLowerCase().contains(q) ||
+              r.location.toLowerCase().contains(q) ||
+              r.status.toLowerCase().contains(q),
+        )
         .toList();
   }
 
   // Request Stats
   int get pendingCount => _requests.where((r) => r.status == 'pending').length;
-  int get acceptedCount => _requests.where((r) => r.status == 'accepted').length;
+  int get acceptedCount =>
+      _requests.where((r) => r.status == 'accepted').length;
   int get doneCount => _requests.where((r) => r.status == 'completed').length;
 }

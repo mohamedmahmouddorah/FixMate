@@ -67,6 +67,13 @@ class StorageService {
     await save();
   }
 
+  bool? getBool(String key) => _data[key] as bool?;
+
+  Future<void> setBool(String key, bool value) async {
+    _data[key] = value;
+    await save();
+  }
+
   /// Returns the path of the JSON file (for debugging/display)
   Future<String> getFilePath() async {
     final file = await _file;

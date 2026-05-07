@@ -80,13 +80,13 @@ class AuthService {
 
   bool get isAdmin => currentUserRole == 'admin';
   bool get isTechnician => currentUserRole == 'technician';
+  bool get isGuest => currentUserEmail == 'guest@fixmate.com';
 
   /// Check if user is logged in
   bool get isLoggedIn => _currentUserEmail != null;
 
   /// Get all registered users (for dashboard)
-  Map<String, Map<String, String>> get allUsers =>
-      Map.unmodifiable(_users);
+  Map<String, Map<String, String>> get allUsers => Map.unmodifiable(_users);
 
   /// Register a new user
   /// Returns null on success, or error message string on failure
@@ -116,7 +116,7 @@ class AuthService {
       'role': role,
       if (bio != null && bio.trim().isNotEmpty) 'bio': bio.trim(),
     };
-    
+
     _saveData();
 
     return null; // Success
@@ -124,10 +124,7 @@ class AuthService {
 
   /// Login with email and password
   /// Returns null on success, or error message string on failure
-  String? login({
-    required String identifier,
-    required String password,
-  }) {
+  String? login({required String identifier, required String password}) {
     final searchKey = identifier.toLowerCase();
     String? foundEmail;
 
@@ -212,7 +209,7 @@ class AuthService {
         _users[userEmail]!['bio'] = bio.trim();
       }
     }
-    
+
     _saveData();
     return null;
   }
@@ -237,7 +234,15 @@ class AuthService {
     String role = 'client',
     String? bio,
   }) {
-    return register(name: name, email: email, password: password, phone: phone, id: id, role: role, bio: bio);
+    return register(
+      name: name,
+      email: email,
+      password: password,
+      phone: phone,
+      id: id,
+      role: role,
+      bio: bio,
+    );
   }
 
   /// Update an existing user (from dashboard)
@@ -259,7 +264,7 @@ class AuthService {
     if (password != null && password.isNotEmpty) {
       _users[userEmail]!['password'] = password;
     }
-    
+
     _saveData();
     return null;
   }

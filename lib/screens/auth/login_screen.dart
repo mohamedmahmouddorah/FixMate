@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -63,7 +63,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.build_circle_rounded, size: 80, color: Colors.blue),
+                  const Icon(
+                    Icons.build_circle_rounded,
+                    size: 80,
+                    color: Colors.blue,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Welcome to FixMate',
@@ -97,10 +101,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icons.person_outline,
                     keyboardType: TextInputType.text,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Email or ID is required';
-                      final isEmail = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(val);
+                      if (val == null || val.isEmpty) {
+                        return 'Email or ID is required';
+                      }
+                      final isEmail = RegExp(
+                        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                      ).hasMatch(val);
                       final isId = RegExp(r"^\d{14}$").hasMatch(val);
-                      if (!isEmail && !isId) return 'Enter a valid Email or 14-digit ID';
+                      if (!isEmail && !isId) {
+                        return 'Enter a valid Email or 14-digit ID';
+                      }
                       return null;
                     },
                   ),
@@ -111,8 +121,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icons.lock_outline,
                     isPassword: true,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Password is required';
-                      if (val.length < 6) return 'Password must be at least 6 characters';
+                      if (val == null || val.isEmpty) {
+                        return 'Password is required';
+                      }
+                      if (val.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
                       return null;
                     },
                   ),
@@ -122,7 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const ForgotPasswordScreen(),
+                          ),
                         );
                       },
                       child: const Text('Forgot Password?'),
@@ -142,7 +158,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
                           );
                         },
                         child: const Text('Register'),
