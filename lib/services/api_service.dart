@@ -24,19 +24,23 @@ class ApiService {
       if (res1.statusCode == 200) {
         final data = json.decode(res1.body);
         final List<dynamic> productsJson = data['products'] ?? [];
-        allDevices.addAll(productsJson.map((json) {
-          final p = Product.fromJson(json);
-          return p.copyWith(category: 'Phones');
-        }));
+        allDevices.addAll(
+          productsJson.map((json) {
+            final p = Product.fromJson(json);
+            return p.copyWith(category: 'Phones');
+          }),
+        );
       }
 
       if (res2.statusCode == 200) {
         final data = json.decode(res2.body);
         final List<dynamic> productsJson = data['products'] ?? [];
-        allDevices.addAll(productsJson.map((json) {
-          final p = Product.fromJson(json);
-          return p.copyWith(category: 'Laptops');
-        }));
+        allDevices.addAll(
+          productsJson.map((json) {
+            final p = Product.fromJson(json);
+            return p.copyWith(category: 'Laptops');
+          }),
+        );
       }
 
       // Add Mock Home Appliances with stable high-quality images
@@ -44,14 +48,16 @@ class ApiService {
         Product(
           id: 1001,
           title: 'Samsung Family Hub',
-          description: 'Smart refrigerator with touch screen and internal cameras.',
+          description:
+              'Smart refrigerator with touch screen and internal cameras.',
           price: 2499,
           discountPercentage: 5,
           rating: 4.8,
           stock: 15,
           brand: 'Samsung',
           category: 'Refrigerators',
-          thumbnail: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=400',
+          thumbnail:
+              'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=400',
           images: [],
           tags: [],
         ),
@@ -65,7 +71,8 @@ class ApiService {
           stock: 20,
           brand: 'LG',
           category: 'Washing Machines',
-          thumbnail: 'https://images.unsplash.com/photo-1626806819282-2c1dc01a5e0c?auto=format&fit=crop&q=80&w=400',
+          thumbnail:
+              'https://images.unsplash.com/photo-1626806819282-2c1dc01a5e0c?auto=format&fit=crop&q=80&w=400',
           images: [],
           tags: [],
         ),
@@ -79,7 +86,8 @@ class ApiService {
           stock: 12,
           brand: 'Whirlpool',
           category: 'Refrigerators',
-          thumbnail: 'https://images.unsplash.com/photo-1571175432290-ef71a58da9bc?auto=format&fit=crop&q=80&w=400',
+          thumbnail:
+              'https://images.unsplash.com/photo-1571175432290-ef71a58da9bc?auto=format&fit=crop&q=80&w=400',
           images: [],
           tags: [],
         ),

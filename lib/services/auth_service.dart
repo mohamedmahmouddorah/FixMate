@@ -78,6 +78,11 @@ class AuthService {
     return _users[_currentUserEmail]?['bio'];
   }
 
+  String? get currentUserImage {
+    if (_currentUserEmail == null) return null;
+    return _users[_currentUserEmail]?['imagePath'];
+  }
+
   bool get isAdmin => currentUserRole == 'admin';
   bool get isTechnician => currentUserRole == 'technician';
   bool get isGuest => currentUserEmail == 'guest@fixmate.com';
@@ -87,6 +92,11 @@ class AuthService {
 
   /// Get all registered users (for dashboard)
   Map<String, Map<String, String>> get allUsers => Map.unmodifiable(_users);
+
+  /// Get user details by email
+  Map<String, String>? getUserByEmail(String email) {
+    return _users[email];
+  }
 
   /// Register a new user
   /// Returns null on success, or error message string on failure
@@ -98,6 +108,7 @@ class AuthService {
     required String id,
     String role = 'client',
     String? bio,
+    String? imagePath,
   }) {
     if (_users.containsKey(email.toLowerCase())) {
       return 'This email is already registered';
@@ -108,14 +119,16 @@ class AuthService {
       }
     }
 
-    _users[email.toLowerCase()] = {
+    final userData = <String, String>{
       'password': password,
       'name': name,
       'phone': phone,
       'id': id,
       'role': role,
-      if (bio != null && bio.trim().isNotEmpty) 'bio': bio.trim(),
     };
+    if (bio != null && bio.trim().isNotEmpty) userData['bio'] = bio.trim();
+    if (imagePath != null) userData['imagePath'] = imagePath;
+    _users[email.toLowerCase()] = userData;
 
     _saveData();
 
@@ -188,12 +201,13 @@ class AuthService {
     return null; // Success
   }
 
-  /// Update user profile
   String? updateProfile({
     required String email,
     String? name,
     String? phone,
     String? bio,
+    String? imagePath,
+    bool removeImage = false,
   }) {
     final userEmail = email.toLowerCase();
     if (!_users.containsKey(userEmail)) {
@@ -202,6 +216,12 @@ class AuthService {
 
     if (name != null) _users[userEmail]!['name'] = name;
     if (phone != null) _users[userEmail]!['phone'] = phone;
+    
+    if (removeImage) {
+      _users[userEmail]!.remove('imagePath');
+    } else if (imagePath != null) {
+      _users[userEmail]!['imagePath'] = imagePath;
+    }
     if (bio != null) {
       if (bio.trim().isEmpty) {
         _users[userEmail]!.remove('bio');

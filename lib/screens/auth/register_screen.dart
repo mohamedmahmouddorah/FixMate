@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../controllers/app_controller.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/gradient_button.dart';
@@ -22,10 +24,124 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedRole = 'client';
+  File? _imageFile;
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            if (_imageFile != null)
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Remove photo', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => _imageFile = null);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() => _imageFile = File(pickedFile.path));
+    }
+  }
+
+  void _showFullScreenImage(String imagePath) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: Colors.black87,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Dismissible(
+            key: const Key('register_view_dismiss'),
+            direction: DismissDirection.vertical,
+            onDismissed: (_) => Navigator.pop(context),
+            child: Stack(
+              children: [
+                Center(
+                  child: Hero(
+                    tag: 'register_profile_image',
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      height: MediaQuery.of(context).size.width * 0.9,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                        image: DecorationImage(
+                          image: FileImage(File(imagePath)),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: anim1,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
 
   void _register() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -41,6 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text,
       role: _selectedRole,
       bio: _selectedRole == 'technician' ? _bioController.text : null,
+      imagePath: _imageFile?.path,
     );
 
     if (mounted) {
@@ -62,9 +179,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Account'),
-      ),
+      appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -87,11 +202,70 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
+                  // Profile Image Picker
+                  Center(
+                    child: Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            if (_imageFile != null) {
+                              _showFullScreenImage(_imageFile!.path);
+                            }
+                          },
+                          child: Hero(
+                            tag: 'register_profile_image',
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey[200],
+                              backgroundImage: _imageFile != null
+                                  ? FileImage(_imageFile!)
+                                  : null,
+                              child: _imageFile == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _showImageSourceDialog,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   // Role Selection at the Top
                   SegmentedButton<String>(
                     segments: const [
-                      ButtonSegment(value: 'client', label: Text('Client'), icon: Icon(Icons.person)),
-                      ButtonSegment(value: 'technician', label: Text('Technician'), icon: Icon(Icons.engineering)),
+                      ButtonSegment(
+                        value: 'client',
+                        label: Text('Client'),
+                        icon: Icon(Icons.person),
+                      ),
+                      ButtonSegment(
+                        value: 'technician',
+                        label: Text('Technician'),
+                        icon: Icon(Icons.engineering),
+                      ),
                     ],
                     selected: {_selectedRole},
                     onSelectionChanged: (Set<String> newSelection) {
@@ -132,9 +306,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     keyboardType: TextInputType.number,
                     maxLength: 11,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Phone is required';
-                      if (val.length != 11) return 'Phone must be exactly 11 digits';
-                      if (!RegExp(r"^\d+$").hasMatch(val)) return 'Phone must contain only numbers';
+                      if (val == null || val.isEmpty) {
+                        return 'Phone is required';
+                      }
+                      if (val.length != 11) {
+                        return 'Phone must be exactly 11 digits';
+                      }
+                      if (!RegExp(r"^\d+$").hasMatch(val)) {
+                        return 'Phone must contain only numbers';
+                      }
                       return null;
                     },
                   ),
@@ -145,8 +325,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Email is required';
-                      final isEmail = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(val);
+                      if (val == null || val.isEmpty) {
+                        return 'Email is required';
+                      }
+                      final isEmail = RegExp(
+                        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                      ).hasMatch(val);
                       if (!isEmail) return 'Enter a valid email address';
                       return null;
                     },
@@ -159,7 +343,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     keyboardType: TextInputType.number,
                     validator: (val) {
                       if (val == null || val.isEmpty) return 'ID is required';
-                      if (!RegExp(r"^\d{14}$").hasMatch(val)) return 'ID must be exactly 14 digits';
+                      if (!RegExp(r"^\d{14}$").hasMatch(val)) {
+                        return 'ID must be exactly 14 digits';
+                      }
                       return null;
                     },
                   ),
@@ -170,8 +356,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: Icons.lock_outline,
                     isPassword: true,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Password is required';
-                      if (val.length < 6) return 'Password must be at least 6 characters';
+                      if (val == null || val.isEmpty) {
+                        return 'Password is required';
+                      }
+                      if (val.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
                       return null;
                     },
                   ),
@@ -182,8 +372,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: Icons.lock_reset,
                     isPassword: true,
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Please confirm your password';
-                      if (val != _passwordController.text) return 'Passwords do not match';
+                      if (val == null || val.isEmpty) {
+                        return 'Please confirm your password';
+                      }
+                      if (val != _passwordController.text) {
+                        return 'Passwords do not match';
+                      }
                       return null;
                     },
                   ),
@@ -195,7 +389,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: Icons.work_history_outlined,
                       maxLines: 3,
                       validator: (val) {
-                        if (val == null || val.trim().isEmpty) return 'Bio/Workplace is required for technicians';
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Bio/Workplace is required for technicians';
+                        }
                         return null;
                       },
                     ),

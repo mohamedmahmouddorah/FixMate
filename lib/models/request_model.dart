@@ -12,6 +12,8 @@ class RepairRequest {
   final String? techEmail;
   final String? techNotes;
   final List<String> imagePaths;
+  final DateTime? acceptedAt;
+  final int? estimatedDays;
 
   RepairRequest({
     required this.id,
@@ -25,6 +27,8 @@ class RepairRequest {
     this.techNotes,
     this.imagePaths = const [],
     DateTime? createdAt,
+    this.acceptedAt,
+    this.estimatedDays,
   }) : createdAt = createdAt ?? DateTime.now();
 
   /// Create a copy of this request with updated fields
@@ -37,6 +41,8 @@ class RepairRequest {
     String? techEmail,
     String? techNotes,
     List<String>? imagePaths,
+    DateTime? acceptedAt,
+    int? estimatedDays,
   }) {
     return RepairRequest(
       id: id,
@@ -50,6 +56,8 @@ class RepairRequest {
       imagePaths: imagePaths ?? this.imagePaths,
       clientEmail: clientEmail,
       createdAt: createdAt,
+      acceptedAt: acceptedAt ?? this.acceptedAt,
+      estimatedDays: estimatedDays ?? this.estimatedDays,
     );
   }
 
@@ -66,6 +74,8 @@ class RepairRequest {
       'techNotes': techNotes,
       'imagePaths': imagePaths,
       'createdAt': createdAt.toIso8601String(),
+      'acceptedAt': acceptedAt?.toIso8601String(),
+      'estimatedDays': estimatedDays,
     };
   }
 
@@ -82,6 +92,19 @@ class RepairRequest {
       techNotes: json['techNotes'],
       imagePaths: List<String>.from(json['imagePaths'] ?? []),
       createdAt: DateTime.parse(json['createdAt']),
+      acceptedAt: json['acceptedAt'] != null
+          ? DateTime.parse(json['acceptedAt'])
+          : null,
+      estimatedDays: json['estimatedDays'],
     );
+  }
+
+  /// Check if the repair duration has exceeded the estimated days
+  bool get isExpired {
+    if (acceptedAt == null || estimatedDays == null || status == 'completed') {
+      return false;
+    }
+    final deadline = acceptedAt!.add(Duration(days: estimatedDays!));
+    return DateTime.now().isAfter(deadline);
   }
 }

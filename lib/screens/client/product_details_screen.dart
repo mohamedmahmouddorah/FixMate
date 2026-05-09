@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/product_model.dart';
 import 'create_request_screen.dart';
 import '../../theme/app_theme.dart';
+import '../../controllers/app_controller.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
   final Product product;
@@ -112,21 +113,22 @@ class ProductDetailsScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.grey),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateRequestScreen(initialDevice: product.title),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.build),
-              label: const Text('Request Repair for this Device'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
+            if (AppController.instance.authService.currentUserRole == 'client')
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateRequestScreen(initialDevice: product.title),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.build),
+                label: const Text('Request Repair for this Device'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
               ),
-            ),
           ],
         ),
       ),

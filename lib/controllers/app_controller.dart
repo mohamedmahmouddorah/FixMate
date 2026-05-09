@@ -44,6 +44,9 @@ class AppController extends ChangeNotifier {
         // ignore error
       }
     }
+
+    // Check for expired requests
+    checkAndRevertExpiredRequests();
   }
 
   Future<void> _saveData() async {
@@ -271,8 +274,6 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   /// Update an existing request
   void updateRequest(
     int id, {
@@ -301,13 +302,15 @@ class AppController extends ChangeNotifier {
   }
 
   /// Accept a request (Technician action)
-  void acceptRequest(int id, String techNotes) {
+  void acceptRequest(int id, String techNotes, int estimatedDays) {
     final index = _requests.indexWhere((r) => r.id == id);
     if (index != -1) {
       _requests[index] = _requests[index].copyWith(
         status: 'accepted',
         techNotes: techNotes,
         techEmail: authService.currentUserEmail,
+        acceptedAt: DateTime.now(),
+        estimatedDays: estimatedDays,
       );
       _saveData();
       notifyListeners();
@@ -317,6 +320,61 @@ class AppController extends ChangeNotifier {
   /// Mark a request as completed (Technician action)
   void completeRequest(int id) {
     updateRequest(id, status: 'completed');
+  }
+
+  /// Cancel an accepted request (Technician action)
+  void cancelTechRequest(int id) {
+    final index = _requests.indexWhere((r) => r.id == id);
+    if (index != -1) {
+      final req = _requests[index];
+      _requests[index] = RepairRequest(
+        id: req.id,
+        device: req.device,
+        category: req.category,
+        description: req.description,
+        location: req.location,
+        status: 'pending',
+        clientEmail: req.clientEmail,
+        techEmail: null,
+        techNotes: null,
+        imagePaths: req.imagePaths,
+        createdAt: req.createdAt,
+        acceptedAt: null,
+        estimatedDays: null,
+      );
+      _saveData();
+      notifyListeners();
+    }
+  }
+
+  /// Automatically revert requests to pending if they exceed the estimated time
+  void checkAndRevertExpiredRequests() {
+    bool changed = false;
+    for (int i = 0; i < _requests.length; i++) {
+      if (_requests[i].isExpired) {
+        final req = _requests[i];
+        _requests[i] = RepairRequest(
+          id: req.id,
+          device: req.device,
+          category: req.category,
+          description: req.description,
+          location: req.location,
+          status: 'pending',
+          clientEmail: req.clientEmail,
+          techEmail: null,
+          techNotes: null,
+          imagePaths: req.imagePaths,
+          createdAt: req.createdAt,
+          acceptedAt: null,
+          estimatedDays: null,
+        );
+        changed = true;
+      }
+    }
+    if (changed) {
+      _saveData();
+      notifyListeners();
+    }
   }
 
   // ==================== Search Requests ====================

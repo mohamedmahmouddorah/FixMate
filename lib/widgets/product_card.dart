@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
-
 import '../theme/app_theme.dart';
-import '../screens/client/create_request_screen.dart';
 import '../screens/client/product_details_screen.dart';
+import '../screens/client/create_request_screen.dart';
+import '../controllers/app_controller.dart';
 
 /// ProductCard - displays a product/device in a grid layout
 class ProductCard extends StatelessWidget {
@@ -209,84 +209,42 @@ class ProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CreateRequestScreen(
-                                  initialDevice: product.title,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(
-                                alpha: 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.build,
-                                  size: 12,
-                                  color: AppTheme.primaryColor,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Fix',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ],
                 ),
               ),
             ),
-            // Full width Repair button
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          CreateRequestScreen(initialDevice: product.title),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.build, size: 14),
-                label: const Text(
-                  'REPAIR',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            // Full width Repair button (Only for Clients)
+            if (AppController.instance.authService.currentUserRole == 'client')
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            CreateRequestScreen(initialDevice: product.title),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.build, size: 14),
+                  label: const Text(
+                    'REPAIR',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

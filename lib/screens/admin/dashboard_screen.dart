@@ -101,12 +101,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       maxLength: 11,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      label: isEditing ? 'New Password (Optional)' : 'Password',
-                      controller: passwordController,
-                      isPassword: true,
-                    ),
+                    if (!isEditing) ...[
+                      const SizedBox(height: 10),
+                      CustomTextField(
+                        label: 'Password',
+                        controller: passwordController,
+                        isPassword: true,
+                      ),
+                    ],
                     if (selectedRole == 'technician') ...[
                       const SizedBox(height: 10),
                       CustomTextField(
