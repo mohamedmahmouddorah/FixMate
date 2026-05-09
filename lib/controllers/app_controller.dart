@@ -45,6 +45,13 @@ class AppController extends ChangeNotifier {
       }
     }
 
+    // Clean up previously generated mock requests
+    final initialLength = _requests.length;
+    _requests.removeWhere((r) => r.clientEmail == 'user@fixmate.com');
+    if (_requests.length != initialLength) {
+      _saveData();
+    }
+
     // Check for expired requests
     checkAndRevertExpiredRequests();
   }
@@ -139,25 +146,6 @@ class AppController extends ChangeNotifier {
 
       _products = await ApiService.fetchProducts();
       _saveData();
-
-      // Mock requests if completely empty
-      if (_requests.isEmpty) {
-        final mocks = await ApiService.fetchMockRequests();
-        for (var mock in mocks) {
-          _requests.add(
-            RepairRequest(
-              id: _nextRequestId++,
-              device: 'Device ${mock['id']}',
-              category: 'General',
-              description: mock['body'].toString().replaceAll('\n', ' '),
-              location: 'Random Location',
-              status: 'pending',
-              clientEmail: authService.currentUserEmail ?? 'user@fixmate.com',
-            ),
-          );
-        }
-        _saveData();
-      }
 
       _isLoadingProducts = false;
       notifyListeners();

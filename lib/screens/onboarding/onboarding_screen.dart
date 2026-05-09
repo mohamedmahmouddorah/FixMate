@@ -16,19 +16,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingData(
       title: 'Welcome to FixMate',
       description: 'Your one-stop solution for all home appliance repairs.',
-      image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&auto=format',
       icon: Icons.build_circle_outlined,
     ),
     OnboardingData(
       title: 'Expert Technicians',
       description: 'Get your devices fixed by certified professionals quickly.',
-      image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&auto=format',
       icon: Icons.engineering_outlined,
     ),
     OnboardingData(
       title: 'Easy Tracking',
       description: 'Track your repair status in real-time from anywhere.',
-      image: 'https://images.unsplash.com/photo-1551288049-bbbda536ad0a?w=500&auto=format',
       icon: Icons.track_changes_outlined,
     ),
   ];
@@ -161,13 +158,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 class OnboardingData {
   final String title;
   final String description;
-  final String image;
   final IconData icon;
 
   OnboardingData({
     required this.title,
     required this.description,
-    required this.image,
     required this.icon,
   });
 }
