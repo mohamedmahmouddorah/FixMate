@@ -10,9 +10,13 @@ class RepairRequest {
   final String clientEmail;
   final DateTime createdAt;
   final String? techEmail;
+  final String? techName;
+  final String? techNationalId;
+  final String? techId;
   final String? techNotes;
   final List<String> imagePaths;
   final DateTime? acceptedAt;
+  final DateTime? completedAt;
   final int? estimatedDays;
 
   RepairRequest({
@@ -24,10 +28,14 @@ class RepairRequest {
     this.status = 'pending',
     required this.clientEmail,
     this.techEmail,
+    this.techName,
+    this.techNationalId,
+    this.techId,
     this.techNotes,
     this.imagePaths = const [],
     DateTime? createdAt,
     this.acceptedAt,
+    this.completedAt,
     this.estimatedDays,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -39,9 +47,13 @@ class RepairRequest {
     String? location,
     String? status,
     String? techEmail,
+    String? techName,
+    String? techNationalId,
+    String? techId,
     String? techNotes,
     List<String>? imagePaths,
     DateTime? acceptedAt,
+    DateTime? completedAt,
     int? estimatedDays,
   }) {
     return RepairRequest(
@@ -52,11 +64,15 @@ class RepairRequest {
       location: location ?? this.location,
       status: status ?? this.status,
       techEmail: techEmail ?? this.techEmail,
+      techName: techName ?? this.techName,
+      techNationalId: techNationalId ?? this.techNationalId,
+      techId: techId ?? this.techId,
       techNotes: techNotes ?? this.techNotes,
       imagePaths: imagePaths ?? this.imagePaths,
       clientEmail: clientEmail,
       createdAt: createdAt,
       acceptedAt: acceptedAt ?? this.acceptedAt,
+      completedAt: completedAt ?? this.completedAt,
       estimatedDays: estimatedDays ?? this.estimatedDays,
     );
   }
@@ -71,10 +87,14 @@ class RepairRequest {
       'status': status,
       'clientEmail': clientEmail,
       'techEmail': techEmail,
+      'techName': techName,
+      'techNationalId': techNationalId,
+      'techId': techId,
       'techNotes': techNotes,
       'imagePaths': imagePaths,
       'createdAt': createdAt.toIso8601String(),
       'acceptedAt': acceptedAt?.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
       'estimatedDays': estimatedDays,
     };
   }
@@ -89,11 +109,17 @@ class RepairRequest {
       status: json['status'] ?? 'pending',
       clientEmail: json['clientEmail'] ?? '',
       techEmail: json['techEmail'],
+      techName: json['techName'],
+      techNationalId: json['techNationalId'],
+      techId: json['techId'],
       techNotes: json['techNotes'],
       imagePaths: List<String>.from(json['imagePaths'] ?? []),
       createdAt: DateTime.parse(json['createdAt']),
       acceptedAt: json['acceptedAt'] != null
           ? DateTime.parse(json['acceptedAt'])
+          : null,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
           : null,
       estimatedDays: json['estimatedDays'],
     );

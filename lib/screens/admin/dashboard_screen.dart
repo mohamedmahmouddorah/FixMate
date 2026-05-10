@@ -37,165 +37,177 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, setStateDialog) {
             return AlertDialog(
               title: Text(isEditing ? 'Edit User' : 'Add New User'),
-              content: SingleChildScrollView(
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.9,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (formError != null) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(8),
-                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(10),
+                        margin: const EdgeInsets.only(bottom: 15),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                          color: Colors.red.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
                         ),
-                        child: Text(
-                          formError!,
-                          style: const TextStyle(color: Colors.red, fontSize: 13),
-                          textAlign: TextAlign.center,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                formError!,
+                                style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedRole,
-                      items: const [
-                        DropdownMenuItem(value: 'client', child: Text('Client')),
-                        DropdownMenuItem(value: 'technician', child: Text('Technician')),
-                        DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setStateDialog(() => selectedRole = val);
-                        }
-                      },
-                      decoration: const InputDecoration(labelText: 'Role'),
-                    ),
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      label: 'Name',
-                      controller: nameController,
-                    ),
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      label: 'Email',
-                      controller: emailController,
-                      enabled: !isEditing,
-                    ),
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      label: 'National ID (14 digits)',
-                      controller: idController,
-                      enabled: !isEditing,
-                      maxLength: 14,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                    const SizedBox(height: 10),
-                    CustomTextField(
-                      label: 'Phone',
-                      controller: phoneController,
-                      keyboardType: TextInputType.phone,
-                      maxLength: 11,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                    if (!isEditing) ...[
-                      const SizedBox(height: 10),
-                      CustomTextField(
-                        label: 'Password',
-                        controller: passwordController,
-                        isPassword: true,
-                      ),
-                    ],
-                    if (selectedRole == 'technician') ...[
-                      const SizedBox(height: 10),
-                      CustomTextField(
-                        label: 'Professional Bio / Description',
-                        hint: 'e.g. 5 years experience in AC repair...',
-                        controller: bioController,
-                        prefixIcon: Icons.description_outlined,
-                        maxLines: 3,
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            DropdownButtonFormField<String>(
+                              initialValue: selectedRole,
+                              items: const [
+                                DropdownMenuItem(value: 'client', child: Text('Client')),
+                                DropdownMenuItem(value: 'technician', child: Text('Technician')),
+                                DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setStateDialog(() => selectedRole = val);
+                                }
+                              },
+                              decoration: const InputDecoration(labelText: 'Role'),
+                            ),
+                            const SizedBox(height: 10),
+                            CustomTextField(
+                              label: 'Name',
+                              controller: nameController,
+                            ),
+                            const SizedBox(height: 10),
+                            CustomTextField(
+                              label: 'Email',
+                              controller: emailController,
+                              enabled: !isEditing,
+                            ),
+                            const SizedBox(height: 10),
+                            CustomTextField(
+                              label: 'National ID (14 digits)',
+                              controller: idController,
+                              enabled: !isEditing,
+                              maxLength: 14,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            ),
+                            const SizedBox(height: 10),
+                            CustomTextField(
+                              label: 'Phone',
+                              controller: phoneController,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 11,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            ),
+                            if (!isEditing) ...[
+                              const SizedBox(height: 10),
+                              CustomTextField(
+                                label: 'Password',
+                                controller: passwordController,
+                                isPassword: true,
+                              ),
+                            ],
+                            if (selectedRole == 'technician') ...[
+                              const SizedBox(height: 10),
+                              CustomTextField(
+                                label: 'Professional Bio / Description',
+                                hint: 'e.g. 5 years experience in AC repair...',
+                                controller: bioController,
+                                prefixIcon: Icons.description_outlined,
+                                maxLines: 3,
+                              ),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () async {
-                            String n = nameController.text.trim();
-                            String e = emailController.text.trim();
-                            String id = idController.text.trim();
-                            String p = phoneController.text.trim();
-                            String pwd = passwordController.text;
-                            String bio = bioController.text.trim();
-
-                            if (n.isEmpty) {
-                              setStateDialog(() => formError = 'Name is required'); return;
-                            }
-                            if (!e.contains('@')) {
-                              setStateDialog(() => formError = 'Invalid email address'); return;
-                            }
-                            if (!isEditing && !RegExp(r"^\d{14}$").hasMatch(id)) {
-                              setStateDialog(() => formError = 'National ID must be exactly 14 digits'); return;
-                            }
-                            if (p.length != 11 || !RegExp(r"^\d+$").hasMatch(p)) {
-                              setStateDialog(() => formError = 'Phone must be exactly 11 digits'); return;
-                            }
-                            if (!isEditing && pwd.isEmpty) {
-                              setStateDialog(() => formError = 'Password is required'); return;
-                            }
-                            if (pwd.isNotEmpty && pwd.length < 6) {
-                              setStateDialog(() => formError = 'Password must be at least 6 characters'); return;
-                            }
-                            if (selectedRole == 'technician' && bio.isEmpty) {
-                              setStateDialog(() => formError = 'Bio is required for technicians'); return;
-                            }
-
-                            setStateDialog(() => formError = null);
-
-                            String? error;
-                            if (isEditing) {
-                              error = await authService.updateUser(
-                                uid: existingUser['uid'],
-                                name: n,
-                                phone: p,
-                                role: selectedRole,
-                              );
-                            } else {
-                              error = await authService.addUser(
-                                email: e,
-                                name: n,
-                                phone: p,
-                                id: id,
-                                password: pwd,
-                                role: selectedRole,
-                                bio: selectedRole == 'technician' ? bio : null,
-                              );
-                            }
-
-                            if (context.mounted) {
-                              if (error != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
-                              } else {
-                                Navigator.of(context).pop();
-                                _refresh();
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'User updated' : 'User added'), backgroundColor: Colors.green));
-                              }
-                            }
-                          },
-                          child: const Text('Save'),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    String n = nameController.text.trim();
+                    String e = emailController.text.trim();
+                    String id = idController.text.trim();
+                    String p = phoneController.text.trim();
+                    String pwd = passwordController.text;
+                    String bio = bioController.text.trim();
+
+                    if (n.isEmpty) {
+                      setStateDialog(() => formError = 'Name is required'); return;
+                    }
+                    if (!e.contains('@')) {
+                      setStateDialog(() => formError = 'Invalid email address'); return;
+                    }
+                    if (!isEditing && !RegExp(r"^\d{14}$").hasMatch(id)) {
+                      setStateDialog(() => formError = 'National ID must be exactly 14 digits'); return;
+                    }
+                    if (p.length != 11 || !RegExp(r"^\d+$").hasMatch(p)) {
+                      setStateDialog(() => formError = 'Phone must be exactly 11 digits'); return;
+                    }
+                    if (!isEditing && pwd.isEmpty) {
+                      setStateDialog(() => formError = 'Password is required'); return;
+                    }
+                    if (pwd.isNotEmpty && pwd.length < 6) {
+                      setStateDialog(() => formError = 'Password must be at least 6 characters'); return;
+                    }
+                    if (selectedRole == 'technician' && bio.isEmpty) {
+                      setStateDialog(() => formError = 'Bio is required for technicians'); return;
+                    }
+
+                    setStateDialog(() => formError = null);
+
+                    String? error;
+                    if (isEditing) {
+                      error = await authService.updateUser(
+                        uid: existingUser['uid'],
+                        name: n,
+                        phone: p,
+                        role: selectedRole,
+                      );
+                    } else {
+                      error = await authService.addUser(
+                        email: e,
+                        name: n,
+                        phone: p,
+                        id: id,
+                        password: pwd,
+                        role: selectedRole,
+                        bio: selectedRole == 'technician' ? bio : null,
+                      );
+                    }
+
+                    if (context.mounted) {
+                      if (error != null) {
+                        setStateDialog(() => formError = error);
+                      } else {
+                        Navigator.of(context).pop();
+                        _refresh();
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'User updated' : 'User added'), backgroundColor: Colors.green));
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
             );
           },
         );

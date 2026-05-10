@@ -113,7 +113,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ],
                         image: DecorationImage(
-                          image: FileImage(File(imagePath)),
+                          image: imagePath.startsWith('http')
+                              ? NetworkImage(imagePath) as ImageProvider
+                              : FileImage(File(imagePath)),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -292,7 +294,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: CircleAvatar(
                       radius: 50,
                       backgroundImage: authService.currentUserImage != null
-                          ? FileImage(File(authService.currentUserImage!))
+                          ? (authService.currentUserImage!.startsWith('http')
+                              ? NetworkImage(authService.currentUserImage!) as ImageProvider
+                              : FileImage(File(authService.currentUserImage!)))
                           : null,
                       child: authService.currentUserImage == null
                           ? const Icon(Icons.person, size: 50)
