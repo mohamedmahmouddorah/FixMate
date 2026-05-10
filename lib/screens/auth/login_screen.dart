@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Simulate network delay
     await Future.delayed(const Duration(seconds: 1));
 
-    final error = AppController.instance.authService.login(
+    final error = await AppController.instance.authService.login(
       identifier: _emailController.text.trim(),
       password: _passwordController.text,
     );

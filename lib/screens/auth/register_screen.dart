@@ -149,7 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     await Future.delayed(const Duration(seconds: 1));
 
-    final error = AppController.instance.authService.register(
+    final error = await AppController.instance.authService.register(
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       email: _emailController.text.trim(),
@@ -160,19 +160,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       imagePath: _imageFile?.path,
     );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (error == null) {
-        // Automatically login the user and pop back
-        AppController.instance.authService.login(
-          identifier: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-        AppController.instance.loadFavorites();
-        Navigator.of(context).pop();
-      } else {
-        setState(() => _errorMessage = error);
-      }
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error == null) {
+      // Automatically login the user
+      await AppController.instance.authService.login(
+        identifier: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      
+      if (!mounted) return;
+      AppController.instance.loadFavorites();
+      Navigator.of(context).pop();
+    } else {
+      setState(() => _errorMessage = error);
     }
   }
 

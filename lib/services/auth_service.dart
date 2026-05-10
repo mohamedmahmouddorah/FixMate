@@ -1,106 +1,70 @@
-// AuthService - handles local authentication (Register / Login / Forgot Password)
-// Users are stored locally in a JSON file for demo purposes
-// Can be replaced with Firebase Authentication later
-import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'storage_service.dart';
 
 class AuthService {
-  // Singleton pattern - single instance throughout the app
+  // Singleton pattern
   static final AuthService instance = AuthService._internal();
   factory AuthService() => instance;
   AuthService._internal();
 
-  final StorageService _storage = StorageService.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Local user storage: email → {password, name, phone, id, role}
-  final Map<String, Map<String, String>> _users = {
-    'admin@fixmate.com': {
-      'password': '123456',
-      'name': 'Mohamed Mahmoud',
-      'phone': '01270846364',
-      'id': '30501281700557',
-      'role': 'admin',
-    },
-  };
+  // Local cache for user metadata to avoid constant Firestore reads
+  Map<String, dynamic>? _currentUserData;
 
   Future<void> init() async {
-    final usersStr = _storage.getString('users_data_v3');
-    if (usersStr != null) {
-      final Map<String, dynamic> decoded = json.decode(usersStr);
-      _users.clear();
-      for (var entry in decoded.entries) {
-        _users[entry.key] = Map<String, String>.from(entry.value);
+    // Listen to auth changes and fetch user data from Firestore
+    _auth.authStateChanges().listen((User? user) async {
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        _currentUserData = doc.data();
+      } else {
+        _currentUserData = null;
       }
-    }
-    _currentUserEmail = _storage.getString('current_user_email');
-  }
+    });
 
-  Future<void> _saveData() async {
-    await _storage.setString('users_data_v3', json.encode(_users));
-    if (_currentUserEmail != null) {
-      await _storage.setString('current_user_email', _currentUserEmail!);
-    } else {
-      await _storage.remove('current_user_email');
+    // Initial check if already logged in
+    if (_auth.currentUser != null) {
+      final doc = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
+      _currentUserData = doc.data();
     }
   }
-
-  /// Currently logged in user's email
-  String? _currentUserEmail;
 
   /// Get the current user's email
-  String? get currentUserEmail => _currentUserEmail;
+  String? get currentUserEmail => _auth.currentUser?.email;
 
-  /// Get the current user's name
-  String? get currentUserName {
-    if (_currentUserEmail == null) return null;
-    return _users[_currentUserEmail]?['name'];
-  }
+  /// Get the current user's uid
+  String? get currentUid => _auth.currentUser?.uid;
 
-  /// Get the current user's phone
-  String? get currentUserPhone {
-    if (_currentUserEmail == null) return null;
-    return _users[_currentUserEmail]?['phone'];
-  }
+  /// Get the current user's name from cache
+  String? get currentUserName => _currentUserData?['name'];
 
-  /// Get the current user's ID
-  String? get currentUserId {
-    if (_currentUserEmail == null) return null;
-    return _users[_currentUserEmail]?['id'];
-  }
+  /// Get the current user's phone from cache
+  String? get currentUserPhone => _currentUserData?['phone'];
 
-  String? get currentUserRole {
-    if (_currentUserEmail == null) return null;
-    return _users[_currentUserEmail]?['role'] ?? 'client';
-  }
+  /// Get the current user's ID card number from cache
+  String? get currentUserId => _currentUserData?['id'];
 
-  String? get currentUserBio {
-    if (_currentUserEmail == null) return null;
-    return _users[_currentUserEmail]?['bio'];
-  }
+  /// Get the current user's role from cache
+  String? get currentUserRole => _currentUserData?['role'] ?? 'client';
 
-  String? get currentUserImage {
-    if (_currentUserEmail == null) return null;
-    return _users[_currentUserEmail]?['imagePath'];
-  }
+  /// Get the current user's bio
+  String? get currentUserBio => _currentUserData?['bio'];
+
+  /// Get the current user's image path
+  String? get currentUserImage => _currentUserData?['imagePath'];
 
   bool get isAdmin => currentUserRole == 'admin';
   bool get isTechnician => currentUserRole == 'technician';
   bool get isGuest => currentUserEmail == 'guest@fixmate.com';
 
   /// Check if user is logged in
-  bool get isLoggedIn => _currentUserEmail != null;
+  bool get isLoggedIn => _auth.currentUser != null;
 
-  /// Get all registered users (for dashboard)
-  Map<String, Map<String, String>> get allUsers => Map.unmodifiable(_users);
-
-  /// Get user details by email
-  Map<String, String>? getUserByEmail(String email) {
-    return _users[email];
-  }
-
-  /// Register a new user
-  /// Returns null on success, or error message string on failure
-  String? register({
+  /// Register a new user with Firebase
+  Future<String?> register({
     required String name,
     required String email,
     required String password,
@@ -109,143 +73,188 @@ class AuthService {
     String role = 'client',
     String? bio,
     String? imagePath,
-  }) {
-    if (_users.containsKey(email.toLowerCase())) {
-      return 'This email is already registered';
-    }
-    for (final user in _users.values) {
-      if (user['id'] == id) {
-        return 'This ID is already registered';
+  }) async {
+    try {
+      // 1. Check if ID already exists in Firestore
+      final idQuery = await _firestore
+          .collection('users')
+          .where('id', isEqualTo: id)
+          .limit(1)
+          .get();
+
+      if (idQuery.docs.isNotEmpty) {
+        return 'This ID number is already registered with another account';
       }
+
+      // 2. Create user in Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final uid = userCredential.user!.uid;
+
+      // 2. Store extra details in Firestore
+      final userData = {
+        'uid': uid,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'id': id,
+        'role': (email == 'admin@fixmate.com') ? 'admin' : role,
+        'bio': bio,
+        'imagePath': imagePath,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('users').doc(uid).set(userData);
+      _currentUserData = userData;
+
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'An unexpected error occurred: $e';
     }
-
-    final userData = <String, String>{
-      'password': password,
-      'name': name,
-      'phone': phone,
-      'id': id,
-      'role': role,
-    };
-    if (bio != null && bio.trim().isNotEmpty) userData['bio'] = bio.trim();
-    if (imagePath != null) userData['imagePath'] = imagePath;
-    _users[email.toLowerCase()] = userData;
-
-    _saveData();
-
-    return null; // Success
   }
 
-  /// Login with email and password
-  /// Returns null on success, or error message string on failure
-  String? login({required String identifier, required String password}) {
-    final searchKey = identifier.toLowerCase();
-    String? foundEmail;
-
-    if (_users.containsKey(searchKey)) {
-      foundEmail = searchKey;
-    } else {
-      for (final entry in _users.entries) {
-        if (entry.value['id'] == searchKey) {
-          foundEmail = entry.key;
-          break;
-        }
-      }
-    }
-
-    if (foundEmail == null) {
-      return 'No account found with this Email or ID';
-    }
-
-    if (_users[foundEmail]!['password'] != password) {
-      return 'Incorrect password';
-    }
-
-    _currentUserEmail = foundEmail;
-    _saveData();
-    return null; // Success
-  }
-
-  /// Logout current user
-  void logout() {
-    _currentUserEmail = null;
-    _saveData();
-  }
-
-  /// Reset password (Forgot Password)
-  /// Returns null on success, or error message on failure
-  String? resetPassword({
+  /// Login with Firebase
+  Future<String?> login({
     required String identifier,
-    required String newPassword,
-  }) {
-    final searchKey = identifier.toLowerCase();
-    String? foundEmail;
+    required String password,
+  }) async {
+    try {
+      String email = identifier.trim();
+      
+      // If identifier is not email (like ID), find email in Firestore
+      if (!identifier.contains('@')) {
+        final query = await _firestore
+            .collection('users')
+            .where('id', isEqualTo: identifier)
+            .limit(1)
+            .get();
+        
+        if (query.docs.isEmpty) return 'No user found with this ID number';
+        email = query.docs.first.get('email');
+      }
 
-    if (_users.containsKey(searchKey)) {
-      foundEmail = searchKey;
-    } else {
-      for (final entry in _users.entries) {
-        if (entry.value['id'] == searchKey) {
-          foundEmail = entry.key;
-          break;
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (userCredential.user != null) {
+        // Fetch full profile from Firestore
+        final doc = await _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+        
+        if (doc.exists) {
+          _currentUserData = doc.data();
+          _currentUserData!['uid'] = userCredential.user!.uid;
+          
+          // Save to local storage for persistence
+          await StorageService.instance.setMap('current_user', _currentUserData!);
+          return null; // Success
+        } else {
+          return 'User profile not found in database';
         }
       }
+      return 'Authentication failed';
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') return 'No account found with this email';
+      if (e.code == 'wrong-password') return 'Incorrect password';
+      return e.message;
+    } catch (e) {
+      return 'Connection error: ${e.toString()}';
     }
-
-    if (foundEmail == null) {
-      return 'No account found with this Email or ID';
-    }
-
-    // Update password
-    _users[foundEmail]!['password'] = newPassword;
-    _saveData();
-    return null; // Success
   }
 
-  String? updateProfile({
-    required String email,
+  /// Logout from Firebase
+  Future<void> logout() async {
+    await _auth.signOut();
+    _currentUserData = null;
+  }
+
+  /// Reset password (Firebase Auth handles this via email)
+  Future<String?> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Update profile in Firestore
+  Future<String?> updateProfile({
     String? name,
     String? phone,
     String? bio,
     String? imagePath,
     bool removeImage = false,
-  }) {
-    final userEmail = email.toLowerCase();
-    if (!_users.containsKey(userEmail)) {
-      return 'User not found';
-    }
+  }) async {
+    try {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) return 'Not logged in';
 
-    if (name != null) _users[userEmail]!['name'] = name;
-    if (phone != null) _users[userEmail]!['phone'] = phone;
-    
-    if (removeImage) {
-      _users[userEmail]!.remove('imagePath');
-    } else if (imagePath != null) {
-      _users[userEmail]!['imagePath'] = imagePath;
-    }
-    if (bio != null) {
-      if (bio.trim().isEmpty) {
-        _users[userEmail]!.remove('bio');
-      } else {
-        _users[userEmail]!['bio'] = bio.trim();
+      final Map<String, dynamic> updates = {};
+      if (name != null) updates['name'] = name;
+      if (phone != null) updates['phone'] = phone;
+      if (bio != null) updates['bio'] = bio;
+      
+      if (removeImage) {
+        updates['imagePath'] = FieldValue.delete();
+      } else if (imagePath != null) {
+        updates['imagePath'] = imagePath;
       }
-    }
 
-    _saveData();
-    return null;
+      if (updates.isNotEmpty) {
+        await _firestore.collection('users').doc(uid).update(updates);
+        // Update local cache
+        _currentUserData?.addAll(updates);
+      }
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Get user details by email (Search Firestore)
+  Future<Map<String, dynamic>?> getUserByEmail(String email) async {
+    final query = await _firestore
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+    
+    if (query.docs.isEmpty) return null;
+    return query.docs.first.data();
+  }
+
+  /// Get all users (for Admin Dashboard)
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    final query = await _firestore.collection('users').get();
+    return query.docs.map((doc) => doc.data()).toList();
   }
 
   /// Change current user password
-  String? changePassword(String newPassword) {
-    if (_currentUserEmail == null) return 'Not logged in';
-    _users[_currentUserEmail]!['password'] = newPassword;
-    _saveData();
-    return null;
+  Future<String?> changePassword(String newPassword) async {
+    try {
+      await _auth.currentUser?.updatePassword(newPassword);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   // ========== Dashboard CRUD Operations ==========
 
   /// Add a new user (from dashboard)
-  String? addUser({
+  Future<String?> addUser({
     required String name,
     required String email,
     required String password,
@@ -253,7 +262,7 @@ class AuthService {
     required String id,
     String role = 'client',
     String? bio,
-  }) {
+  }) async {
     return register(
       name: name,
       email: email,
@@ -266,41 +275,58 @@ class AuthService {
   }
 
   /// Update an existing user (from dashboard)
-  String? updateUser({
-    required String email,
+  Future<String?> updateUser({
+    required String uid,
     required String name,
     required String phone,
-    String? password,
     String? role,
-  }) {
-    final userEmail = email.toLowerCase();
-    if (!_users.containsKey(userEmail)) {
-      return 'User not found';
-    }
+  }) async {
+    try {
+      final Map<String, dynamic> updates = {
+        'name': name,
+        'phone': phone,
+      };
+      if (role != null) updates['role'] = role;
 
-    _users[userEmail]!['name'] = name;
-    _users[userEmail]!['phone'] = phone;
-    if (role != null) _users[userEmail]!['role'] = role;
-    if (password != null && password.isNotEmpty) {
-      _users[userEmail]!['password'] = password;
+      await _firestore.collection('users').doc(uid).update(updates);
+      return null;
+    } catch (e) {
+      return e.toString();
     }
-
-    _saveData();
-    return null;
   }
 
-  /// Delete a user (from dashboard)
-  String? deleteUser(String email) {
-    final userEmail = email.toLowerCase();
-    if (!_users.containsKey(userEmail)) {
-      return 'User not found';
+  /// Reset password via email
+  Future<String?> resetPassword({required String identifier}) async {
+    // If identifier is an ID, find the email first
+    String emailToUse = identifier;
+    if (!identifier.contains('@')) {
+      final query = await _firestore
+          .collection('users')
+          .where('id', isEqualTo: identifier)
+          .limit(1)
+          .get();
+      
+      if (query.docs.isEmpty) return 'No account found with this ID';
+      emailToUse = query.docs.first.get('email');
     }
+    
+    try {
+      await _auth.sendPasswordResetEmail(email: emailToUse);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    }
+  }
 
-    _users.remove(userEmail);
-    if (userEmail == _currentUserEmail) {
-      _currentUserEmail = null;
+  /// Delete a user (Admin only)
+  Future<String?> deleteUser(String uid) async {
+    try {
+      // Note: This only deletes the Firestore record. 
+      // Deleting the actual Auth account requires Firebase Admin SDK or Cloud Functions.
+      await _firestore.collection('users').doc(uid).delete();
+      return null;
+    } catch (e) {
+      return e.toString();
     }
-    _saveData();
-    return null;
   }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "550373472553",
+    "project_id": "fixmate-2026",
+    "storage_bucket": "fixmate-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:550373472553:android:786ac6d7831d1126ac9f38",
+        "android_client_info": {
+          "package_name": "com.fixmate.fixmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-BVTKgGY9uf3odDj7Mcb1qQBrT9_AapY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

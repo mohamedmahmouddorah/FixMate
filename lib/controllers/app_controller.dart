@@ -45,15 +45,39 @@ class AppController extends ChangeNotifier {
       }
     }
 
-    // Clean up previously generated mock requests
-    final initialLength = _requests.length;
-    _requests.removeWhere((r) => r.clientEmail == 'user@fixmate.com');
-    if (_requests.length != initialLength) {
-      _saveData();
-    }
+    // Load locally added and deleted products
+    _loadLocalProductChanges();
 
     // Check for expired requests
     checkAndRevertExpiredRequests();
+  }
+
+  // Lists to track local changes to API data
+  List<Product> _locallyAddedProducts = [];
+  List<int> _locallyDeletedProductIds = [];
+
+  void _loadLocalProductChanges() {
+    final addedStr = _storage.getString('locally_added_products');
+    if (addedStr != null) {
+      final List<dynamic> decoded = json.decode(addedStr);
+      _locallyAddedProducts = decoded.map((e) => Product.fromJson(e)).toList();
+    }
+
+    final deletedStr = _storage.getStringList('locally_deleted_ids');
+    if (deletedStr != null) {
+      _locallyDeletedProductIds = deletedStr.map((e) => int.parse(e)).toList();
+    }
+  }
+
+  Future<void> _saveLocalProductChanges() async {
+    await _storage.setString(
+      'locally_added_products',
+      json.encode(_locallyAddedProducts.map((p) => p.toJson()).toList()),
+    );
+    await _storage.setStringList(
+      'locally_deleted_ids',
+      _locallyDeletedProductIds.map((id) => id.toString()).toList(),
+    );
   }
 
   Future<void> _saveData() async {
@@ -126,33 +150,43 @@ class AppController extends ChangeNotifier {
   String? _productsError;
   String? get productsError => _productsError;
 
-  /// Fetch products from local storage or API
+  /// Fetch products from API (Priority) and merge with local changes
   Future<void> fetchProducts() async {
-    if (_products.isNotEmpty) return;
-
     _isLoadingProducts = true;
     _productsError = null;
     notifyListeners();
 
     try {
-      final productsStr = _storage.getString('products_data_v8');
-      if (productsStr != null) {
-        final List<dynamic> decoded = json.decode(productsStr);
-        _products = decoded.map((e) => Product.fromJson(e)).toList();
-        _isLoadingProducts = false;
-        notifyListeners();
-        return;
-      }
+      // 1. Fetch fresh data from API
+      List<Product> apiProducts = await ApiService.fetchProducts();
+      
+      // 2. Filter out products that were locally deleted
+      apiProducts.removeWhere((p) => _locallyDeletedProductIds.contains(p.id));
 
-      _products = await ApiService.fetchProducts();
-      _saveData();
+      // 3. Combine with locally added products
+      _products = [...apiProducts, ..._locallyAddedProducts];
+
+      // 4. Update storage with a cache version for offline use
+      _storage.setString(
+        'products_data_cache',
+        json.encode(_products.map((p) => p.toJson()).toList()),
+      );
 
       _isLoadingProducts = false;
       notifyListeners();
     } catch (e) {
-      _isLoadingProducts = false;
-      _productsError = e.toString();
-      notifyListeners();
+      // If API fails (offline), try to load from cache
+      final cachedStr = _storage.getString('products_data_cache');
+      if (cachedStr != null) {
+        final List<dynamic> decoded = json.decode(cachedStr);
+        _products = decoded.map((e) => Product.fromJson(e)).toList();
+        _isLoadingProducts = false;
+        notifyListeners();
+      } else {
+        _isLoadingProducts = false;
+        _productsError = 'Offline and no cached data available.';
+        notifyListeners();
+      }
     }
   }
 
@@ -172,25 +206,42 @@ class AppController extends ChangeNotifier {
   // ==================== Products CRUD (Local) ====================
 
   void addProduct(Product product) {
+    _locallyAddedProducts.add(product);
     _products.add(product);
-    _saveData();
+    _saveLocalProductChanges();
     notifyListeners();
   }
 
   void updateProduct(int id, Product updated) {
+    // Update in main list
     final index = _products.indexWhere((p) => p.id == id);
     if (index != -1) {
       _products[index] = updated;
-      _saveData();
-      notifyListeners();
     }
+
+    // Update in locally added list if it exists there
+    final localIndex = _locallyAddedProducts.indexWhere((p) => p.id == id);
+    if (localIndex != -1) {
+      _locallyAddedProducts[localIndex] = updated;
+      _saveLocalProductChanges();
+    }
+    notifyListeners();
   }
 
   void deleteProduct(int id) {
+    // If it's a locally added product, just remove it from that list
+    _locallyAddedProducts.removeWhere((p) => p.id == id);
+    
+    // If it's an API product, track its ID in deleted list
+    if (!_locallyDeletedProductIds.contains(id)) {
+      _locallyDeletedProductIds.add(id);
+    }
+
     _products.removeWhere((p) => p.id == id);
-    // Also remove from favorites if exists
     _favoriteProductIds.remove(id);
-    _saveData();
+    
+    _saveLocalProductChanges();
+    _saveData(); // for favorites
     notifyListeners();
   }
 

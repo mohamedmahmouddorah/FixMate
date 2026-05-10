@@ -74,6 +74,16 @@ class StorageService {
     await save();
   }
 
+  Future<void> setMap(String key, Map<String, dynamic> value) async {
+    _data[key] = value;
+    await save();
+  }
+
+  Map<String, dynamic>? getMap(String key) {
+    if (_data[key] == null) return null;
+    return Map<String, dynamic>.from(_data[key]);
+  }
+
   /// Returns the path of the JSON file (for debugging/display)
   Future<String> getFilePath() async {
     final file = await _file;

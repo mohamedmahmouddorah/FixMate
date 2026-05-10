@@ -13,7 +13,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
@@ -29,16 +28,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     await Future.delayed(const Duration(seconds: 1));
 
-    final error = AppController.instance.authService.resetPassword(
+    final error = await AppController.instance.authService.resetPassword(
       identifier: _emailController.text.trim(),
-      newPassword: _passwordController.text,
     );
 
     if (mounted) {
       setState(() => _isLoading = false);
       if (error == null) {
-        setState(() => _successMessage = 'Password reset successfully! You can now login.');
-        Future.delayed(const Duration(seconds: 2), () {
+        setState(() => _successMessage = 'A password reset link has been sent to your email.');
+        Future.delayed(const Duration(seconds: 4), () {
           if (mounted) Navigator.of(context).pop();
         });
       } else {
@@ -109,18 +107,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       final isEmail = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(val);
                       final isId = RegExp(r"^\d{14}$").hasMatch(val);
                       if (!isEmail && !isId) return 'Enter a valid Email or 14-digit ID';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    label: 'New Password',
-                    controller: _passwordController,
-                    prefixIcon: Icons.lock_outline,
-                    isPassword: true,
-                    validator: (val) {
-                      if (val == null || val.isEmpty) return 'Password is required';
-                      if (val.length < 6) return 'Must be at least 6 characters';
                       return null;
                     },
                   ),

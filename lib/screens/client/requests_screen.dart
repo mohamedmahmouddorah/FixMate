@@ -225,11 +225,11 @@ class RequestsScreen extends StatelessWidget {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
-                        Builder(
-                          builder: (context) {
-                            final clientUser = auth.getUserByEmail(req.clientEmail);
-                            final clientName = clientUser?['name'] ?? 'Unknown';
-                            final clientId = clientUser?['id'] ?? 'N/A';
+                        FutureBuilder<Map<String, dynamic>?>(
+                          future: auth.getUserByEmail(req.clientEmail),
+                          builder: (context, snapshot) {
+                            final clientName = snapshot.data?['name'] ?? 'Loading...';
+                            final clientId = snapshot.data?['id'] ?? '...';
                             
                             return Text(
                               'Client: $clientName (ID: $clientId)',
@@ -237,11 +237,11 @@ class RequestsScreen extends StatelessWidget {
                             );
                           },
                         ),
-                        if (req.techEmail != null) Builder(
-                          builder: (context) {
-                            final techUser = auth.getUserByEmail(req.techEmail!);
-                            final techName = techUser?['name'] ?? 'Unknown';
-                            final techId = techUser?['id'] ?? 'N/A';
+                        if (req.techEmail != null) FutureBuilder<Map<String, dynamic>?>(
+                          future: auth.getUserByEmail(req.techEmail!),
+                          builder: (context, snapshot) {
+                            final techName = snapshot.data?['name'] ?? 'Loading...';
+                            final techId = snapshot.data?['id'] ?? '...';
                             
                             return Padding(
                               padding: const EdgeInsets.only(top: 4),

@@ -13,23 +13,21 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   void _refresh() => setState(() {});
 
-  void _showAddEditUserDialog({String? existingEmail}) {
+  void _showAddEditUserDialog({Map<String, dynamic>? existingUser}) {
     final authService = AppController.instance.authService;
-    final isEditing = existingEmail != null;
-    final allUsers = authService.allUsers;
+    final isEditing = existingUser != null;
 
-    final nameController = TextEditingController(text: isEditing ? allUsers[existingEmail]!['name'] : '');
-    final emailController = TextEditingController(text: isEditing ? existingEmail : '');
-    final phoneController = TextEditingController(text: isEditing ? allUsers[existingEmail]!['phone'] : '');
-    final idController = TextEditingController(text: isEditing ? allUsers[existingEmail]!['id'] : '');
+    final nameController = TextEditingController(text: isEditing ? existingUser['name'] : '');
+    final emailController = TextEditingController(text: isEditing ? existingUser['email'] : '');
+    final phoneController = TextEditingController(text: isEditing ? existingUser['phone'] : '');
+    final idController = TextEditingController(text: isEditing ? existingUser['id'] : '');
     final passwordController = TextEditingController();
     
-    final defaultRole = allUsers.isEmpty ? 'admin' : 'client';
-    String selectedRole = isEditing ? (allUsers[existingEmail]!['role'] ?? 'client') : defaultRole;
+    String selectedRole = isEditing ? (existingUser['role'] ?? 'client') : 'client';
 
     String? formError;
     final bioController = TextEditingController(
-      text: isEditing ? (allUsers[existingEmail]!['bio'] ?? '') : '',
+      text: isEditing ? (existingUser['bio'] ?? '') : '',
     );
 
     showDialog(
@@ -129,7 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             String n = nameController.text.trim();
                             String e = emailController.text.trim();
                             String id = idController.text.trim();
@@ -163,15 +161,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                             String? error;
                             if (isEditing) {
-                              error = authService.updateUser(
-                                email: e,
+                              error = await authService.updateUser(
+                                uid: existingUser['uid'],
                                 name: n,
                                 phone: p,
-                                password: pwd,
                                 role: selectedRole,
                               );
                             } else {
-                              error = authService.addUser(
+                              error = await authService.addUser(
                                 email: e,
                                 name: n,
                                 phone: p,
@@ -182,12 +179,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               );
                             }
 
-                            if (error != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
-                            } else {
-                              Navigator.of(context).pop();
-                              _refresh();
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'User updated' : 'User added'), backgroundColor: Colors.green));
+                            if (context.mounted) {
+                              if (error != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                              } else {
+                                Navigator.of(context).pop();
+                                _refresh();
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'User updated' : 'User added'), backgroundColor: Colors.green));
+                              }
                             }
                           },
                           child: const Text('Save'),
@@ -204,27 +203,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _deleteUser(String email) {
+  void _deleteUser(Map<String, dynamic> user) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete User'),
-          content: Text('Are you sure you want to delete $email?'),
+          content: Text('Are you sure you want to delete ${user['email']}?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                final error = AppController.instance.authService.deleteUser(email);
-                Navigator.of(context).pop();
-                if (error != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
-                } else {
-                  _refresh();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User deleted successfully'), backgroundColor: Colors.green));
+              onPressed: () async {
+                final error = await AppController.instance.authService.deleteUser(user['uid']);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  if (error != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                  } else {
+                    _refresh();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User deleted successfully'), backgroundColor: Colors.green));
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -236,15 +237,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildUsersTable(List<MapEntry<String, Map<String, String>>> users) {
+  Widget _buildUsersTable(List<Map<String, dynamic>> users) {
     final authService = AppController.instance.authService;
+    if (users.isEmpty) {
+      return const Center(child: Text('No users found.'));
+    }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: users.length,
       itemBuilder: (context, index) {
-        final entry = users[index];
-        final email = entry.key;
-        final data = entry.value;
+        final userData = users[index];
+        final email = userData['email'] ?? '';
         final isMe = email == authService.currentUserEmail;
 
         return Card(
@@ -260,7 +263,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             title: Row(
               children: [
                 Expanded(
-                  child: Text(data['name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: Text(userData['name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 if (isMe)
                   Container(
@@ -287,7 +290,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       const Icon(Icons.phone, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(data['phone'] ?? 'N/A')),
+                      Expanded(child: Text(userData['phone'] ?? 'N/A')),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -295,10 +298,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       const Icon(Icons.badge, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(data['id'] ?? 'N/A')),
+                      Expanded(child: Text(userData['id'] ?? 'N/A')),
                     ],
                   ),
-                  if (data.containsKey('bio') && data['bio'] != null && data['bio']!.isNotEmpty) ...[
+                  if (userData.containsKey('bio') && userData['bio'] != null && userData['bio']!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(8),
@@ -313,7 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              data['bio']!,
+                              userData['bio']!,
                               style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontStyle: FontStyle.italic),
                             ),
                           ),
@@ -329,7 +332,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Role: ${data['role']?.toUpperCase() ?? 'CLIENT'}', 
+                      'Role: ${userData['role']?.toUpperCase() ?? 'CLIENT'}', 
                       style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -341,12 +344,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => _showAddEditUserDialog(existingEmail: email),
+                  onPressed: () => _showAddEditUserDialog(existingUser: userData),
                 ),
                 if (!isMe)
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteUser(email),
+                    onPressed: () => _deleteUser(userData),
                   ),
               ],
             ),
@@ -359,10 +362,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final authService = AppController.instance.authService;
-    final allUsers = authService.allUsers;
-    
-    final clients = allUsers.entries.where((e) => e.value['role'] == 'client' || e.value['role'] == null).toList();
-    final technicians = allUsers.entries.where((e) => e.value['role'] == 'technician' || e.value['role'] == 'admin').toList();
 
     return DefaultTabController(
       length: 2,
@@ -384,11 +383,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(width: 8),
           ],
         ),
-        body: TabBarView(
-          children: [
-            _buildUsersTable(clients),
-            _buildUsersTable(technicians),
-          ],
+        body: FutureBuilder<List<Map<String, dynamic>>>(
+          future: authService.getAllUsers(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            
+            final allUsers = snapshot.data ?? [];
+            final clients = allUsers.where((u) => u['role'] == 'client' || u['role'] == null).toList();
+            final technicians = allUsers.where((u) => u['role'] == 'technician' || u['role'] == 'admin').toList();
+
+            return TabBarView(
+              children: [
+                _buildUsersTable(clients),
+                _buildUsersTable(technicians),
+              ],
+            );
+          },
         ),
       ),
     );

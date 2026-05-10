@@ -62,8 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (image != null) {
       final authService = AppController.instance.authService;
       if (authService.currentUserEmail != null) {
-        authService.updateProfile(
-          email: authService.currentUserEmail!,
+        await authService.updateProfile(
           imagePath: image.path,
         );
         setState(() {}); // Refresh UI
@@ -71,11 +70,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _removeImage() {
+  void _removeImage() async {
     final authService = AppController.instance.authService;
     if (authService.currentUserEmail != null) {
-      authService.updateProfile(
-        email: authService.currentUserEmail!,
+      await authService.updateProfile(
         removeImage: true,
       );
       setState(() {});
@@ -231,14 +229,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final authService = AppController.instance.authService;
-                authService.deleteUser(email);
-                authService.logout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
-                );
+                // Note: uid is passed to deleteUser now
+                final uid = authService.currentUid;
+                if (uid != null) {
+                  await authService.deleteUser(uid);
+                }
+                await authService.logout();
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('Delete'),
@@ -259,12 +263,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              authService.logout();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
+            onPressed: () async {
+              await authService.logout();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],
