@@ -159,7 +159,7 @@ class AppController extends ChangeNotifier {
     try {
       // 1. Fetch fresh data from API
       List<Product> apiProducts = await ApiService.fetchProducts();
-      
+
       // 2. Filter out products that were locally deleted
       apiProducts.removeWhere((p) => _locallyDeletedProductIds.contains(p.id));
 
@@ -231,7 +231,7 @@ class AppController extends ChangeNotifier {
   void deleteProduct(int id) {
     // If it's a locally added product, just remove it from that list
     _locallyAddedProducts.removeWhere((p) => p.id == id);
-    
+
     // If it's an API product, track its ID in deleted list
     if (!_locallyDeletedProductIds.contains(id)) {
       _locallyDeletedProductIds.add(id);
@@ -239,7 +239,7 @@ class AppController extends ChangeNotifier {
 
     _products.removeWhere((p) => p.id == id);
     _favoriteProductIds.remove(id);
-    
+
     _saveLocalProductChanges();
     _saveData(); // for favorites
     notifyListeners();

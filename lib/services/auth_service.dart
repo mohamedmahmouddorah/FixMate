@@ -212,8 +212,13 @@ class AuthService {
 
       if (updates.isNotEmpty) {
         await _firestore.collection('users').doc(uid).update(updates);
-        // Update local cache
-        _currentUserData?.addAll(updates);
+        
+        // Update local cache carefully
+        final Map<String, dynamic> localUpdates = Map.from(updates);
+        if (removeImage) {
+          localUpdates['imagePath'] = null; // Use null for local UI, not FieldValue
+        }
+        _currentUserData?.addAll(localUpdates);
       }
       return null;
     } catch (e) {
